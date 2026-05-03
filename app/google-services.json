@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1026326199432",
+    "project_id": "eventpulse-96b67",
+    "storage_bucket": "eventpulse-96b67.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1026326199432:android:403f2ff803eb7a8494b33d",
+        "android_client_info": {
+          "package_name": "com.org.debrebirhan.eventpulse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAjKsfJaLTLIv1FA-R-Tjm5NtZbftSutI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
