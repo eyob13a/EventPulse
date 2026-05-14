@@ -1,6 +1,7 @@
 package com.org.debrebirhan.eventpulse.ui
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
@@ -12,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,10 +24,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.org.debrebirhan.eventpulse.data.Event
 import com.org.debrebirhan.eventpulse.viewmodel.AuthViewModel
 import com.org.debrebirhan.eventpulse.viewmodel.EventViewModel
+import com.org.debrebirhan.eventpulse.data.Event
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,39 +38,85 @@ fun CreateEventScreen(
     authViewModel: AuthViewModel,
     eventViewModel: EventViewModel,
     organizerId: String,
+    eventId: String? = null,
     onBack: () -> Unit,
     onSuccess: () -> Unit
 ) {
     val context = LocalContext.current
+    val eventPulseOrange = Color(0xFFD35400)
 
+    // --- State Variables ---
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var capacity by remember { mutableStateOf("") }
-
-
-    val categories = listOf("Concerts", "Culture", "Seminars", "Festivals", "Sports", "Exhibitions")
-    var expanded by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf(categories[0]) }
-
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var existingImageUrl by remember { mutableStateOf("") }
+    var dateText by remember { mutableStateOf("") }
+
+    // --- Category Dropdown State ---
+    // 🚩 እዚህ ጋር ነው የስም ቅያሬውን ብቻ ያደረግኩት (ከሆም ስክሪን አይኮኖች ጋር እንዲመሳሰል)
+    val categories = listOf("Concerts", "Culture", "Seminars", "Festivals", "Sports", "Exhibitions", "Other")
+    var selectedCategory by remember { mutableStateOf(categories[0]) }
+    var expanded by remember { mutableStateOf(false) }
+
+    // --- Date Picker State ---
+    val datePickerState = rememberDatePickerState()
+    var showDatePicker by remember { mutableStateOf(false) }
+
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    val eventPulseOrange = Color(0xFFD35400)
+    // Edit Mode logic
+    LaunchedEffect(eventId) {
+        if (eventId != null) {
+            val event = eventViewModel.events.value.find { it.id == eventId }
+            event?.let {
+                title = it.title
+                description = it.description
+                location = it.location
+                price = it.price
+                capacity = it.capacity
+                dateText = it.date
+                selectedCategory = it.category
+                existingImageUrl = it.imageUrl
+            }
+        }
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        selectedImageUri = uri
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? -> selectedImageUri = uri }
+
+    // Date Picker Dialog UI
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val date = datePickerState.selectedDateMillis?.let {
+                        SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))
+                    } ?: ""
+                    dateText = date
+                    showDatePicker = false
+                }) { Text("OK", color = eventPulseOrange) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) { DatePicker(state = datePickerState) }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create New Event", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        if (eventId == null) "Create New Event" else "Edit Event",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -82,7 +133,7 @@ fun CreateEventScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
+            // IMAGE PICKER SECTION
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -92,10 +143,10 @@ fun CreateEventScreen(
                     .clickable { imagePickerLauncher.launch("image/*") },
                 contentAlignment = Alignment.Center
             ) {
-                if (selectedImageUri != null) {
+                if (selectedImageUri != null || existingImageUrl.isNotEmpty()) {
                     AsyncImage(
-                        model = selectedImageUri,
-                        contentDescription = "Selected Image",
+                        model = selectedImageUri ?: existingImageUrl,
+                        contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -107,15 +158,20 @@ fun CreateEventScreen(
                             tint = eventPulseOrange,
                             modifier = Modifier.size(40.dp)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Tap to add event photo", color = Color.Gray)
+                        Text("Add Event Poster", color = Color.Gray, fontSize = 12.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // EVENT TITLE
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Event Title") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-
+            // CATEGORY DROPDOWN
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -124,14 +180,9 @@ fun CreateEventScreen(
                     value = selectedCategory,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Select Category") },
+                    label = { Text("Category") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = eventPulseOrange,
-                        focusedLabelColor = eventPulseOrange
-                    )
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,
@@ -149,39 +200,22 @@ fun CreateEventScreen(
                 }
             }
 
+            // DATE PICKER FIELD
             OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Event Title") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description") },
+                value = dateText,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Event Date") },
                 modifier = Modifier.fillMaxWidth(),
-                minLines = 3
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Date")
+                    }
+                }
             )
 
-            OutlinedTextField(
-                value = location,
-                onValueChange = { location = it },
-                label = { Text("Venue / Location") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = date,
-                onValueChange = { date = it },
-                label = { Text("Date & Time") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            // PRICE & CAPACITY ROW
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = price,
                     onValueChange = { price = it },
@@ -196,67 +230,118 @@ fun CreateEventScreen(
                 )
             }
 
+            // LOCATION & DESCRIPTION
+            OutlinedTextField(
+                value = location,
+                onValueChange = { location = it },
+                label = { Text("Venue Location") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
+            )
+
+            // ERROR MESSAGE
             if (errorMessage.isNotEmpty()) {
                 Text(
-                    text = errorMessage,
+                    errorMessage,
                     color = Color.Red,
-                    style = MaterialTheme.typography.bodySmall
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 4.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // PUBLISH / UPDATE BUTTON
             Button(
                 onClick = {
-                    if (title.isBlank() || selectedImageUri == null) {
-                        errorMessage = "Please fill title and select an image"
+                    if (title.isBlank() || dateText.isBlank() || location.isBlank()) {
+                        errorMessage = "Title, Date and Location are required!"
                         return@Button
                     }
-
                     isLoading = true
                     errorMessage = ""
 
-                    authViewModel.uploadImage(context, selectedImageUri!!) { imageUrl ->
-                        if (imageUrl != null) {
-                            val newEvent = Event(
-                                title = title,
-                                description = description,
-                                location = location,
-                                date = date,
-                                price = price,
-                                capacity = capacity,
-                                imageUrl = imageUrl,
-                                organizerId = organizerId,
-                                category = selectedCategory
-                            )
+                    val saveAction: (String) -> Unit = { imageUrl ->
+                        val eventToSave = Event(
+                            id = eventId ?: "",
+                            title = title,
+                            description = description,
+                            location = location,
+                            date = dateText,
+                            price = price,
+                            capacity = capacity,
+                            imageUrl = imageUrl,
+                            organizerId = organizerId,
+                            category = selectedCategory,
+                            status = "pending"
+                        )
 
+                        if (eventId == null) {
                             eventViewModel.addEvent(
-                                event = newEvent,
+                                eventToSave,
                                 onSuccess = {
                                     isLoading = false
+                                    Toast.makeText(context, "Event published! Waiting for admin approval.", Toast.LENGTH_LONG).show()
                                     onSuccess()
                                 },
-                                onError = { error ->
+                                onError = {
                                     isLoading = false
-                                    errorMessage = "Firestore Error: $error"
+                                    errorMessage = it
+                                    Toast.makeText(context, "Error: $it", Toast.LENGTH_SHORT).show()
                                 }
                             )
                         } else {
-                            isLoading = false
-                            errorMessage = "Image upload failed."
+                            eventViewModel.updateEvent(
+                                eventToSave,
+                                onSuccess = {
+                                    isLoading = false
+                                    Toast.makeText(context, "Event updated! Waiting for re-approval.", Toast.LENGTH_LONG).show()
+                                    onSuccess()
+                                },
+                                onError = {
+                                    isLoading = false
+                                    errorMessage = it
+                                    Toast.makeText(context, "Update failed: $it", Toast.LENGTH_SHORT).show()
+                                }
+                            )
                         }
+                    }
+
+                    // Image Upload Logic
+                    if (selectedImageUri != null) {
+                        authViewModel.uploadImage(context, selectedImageUri!!) { url ->
+                            if (url != null) {
+                                saveAction(url)
+                            } else {
+                                isLoading = false
+                                errorMessage = "Image upload failed. Please try again."
+                                Toast.makeText(context, "Image upload failed!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else {
+                        saveAction(existingImageUrl)
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
+                    .height(55.dp),
                 enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = eventPulseOrange)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Publish Event", color = Color.White)
+                    Text(
+                        if (eventId == null) "Publish Event" else "Update Event",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
             }
         }

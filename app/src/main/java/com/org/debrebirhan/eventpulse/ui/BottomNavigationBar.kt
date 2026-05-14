@@ -1,78 +1,97 @@
 package com.org.debrebirhan.eventpulse.ui
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.org.debrebirhan.eventpulse.navigation.BottomNavItem
+import com.org.debrebirhan.eventpulse.viewmodel.AuthViewModel
 import com.org.debrebirhan.eventpulse.viewmodel.EventViewModel
 
 @Composable
 fun EventPulseBottomNavigation(
     navController: NavController,
-    eventViewModel: EventViewModel
+    eventViewModel: EventViewModel,
+    authViewModel: AuthViewModel
 ) {
+    val eventPulseOrange = Color(0xFFD35400)
+    val inactiveGray = Color(0xFF95A5A6)
 
-    val items = listOf(
-        BottomNavItem.Home,
-        BottomNavItem.Search,
-        BottomNavItem.Tickets,
-        BottomNavItem.Profile
-    )
+    // የተጠቃሚውን ሮል እናወጣለን
+    val userMap by authViewModel.userData.collectAsState()
+    val userRole = userMap?.get("role")?.toString() ?: "user"
 
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 8.dp
-    ) {
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStackEntry?.destination?.route
+    // Admin ካልሆነ ብቻ ነው Bottom Navigation የሚታየው
+    if (userRole != "admin") {
+        val items = listOf(
+            BottomNavItem.Home,
+            BottomNavItem.Search,
+            BottomNavItem.Tickets,
+            BottomNavItem.Profile
+        )
 
-        items.forEach { item ->
-            val isSelected = currentRoute == item.route
+        NavigationBar(
+            containerColor = Color.White,
+            tonalElevation = 12.dp, // ለየት ያለ ጥላ እንዲኖረው
+            modifier = Modifier
+        ) {
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
 
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.title,
+            items.forEach { item ->
+                val isSelected = currentRoute == item.route
 
-                        tint = if (isSelected) Color(0xFFD35400) else Color.Gray
-                    )
-                },
-                label = {
-                    Text(
-                        text = item.title,
-                        color = if (isSelected) Color(0xFFD35400) else Color.Gray,
-                        fontSize = 10.sp
-                    )
-                },
-                selected = isSelected,
-                onClick = {
-
-                    if (item.route == BottomNavItem.Home.route) {
-                        eventViewModel.fetchEvents()
-                    }
-
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.title,
+                            modifier = Modifier.size(if (isSelected) 28.dp else 24.dp), // ሲመረጥ ትንሽ ገዘፍ እንዲል
+                            tint = if (isSelected) eventPulseOrange else inactiveGray
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = item.title,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) eventPulseOrange else inactiveGray
+                        )
+                    },
+                    selected = isSelected,
+                    onClick = {
+                        // Home ከተነካ ዳታውን አዲስ ያደርጋል
+                        if (item.route == BottomNavItem.Home.route) {
+                            eventViewModel.fetchEvents()
                         }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = Color.Transparent,
-                    selectedIconColor = Color(0xFFD35400),
-                    unselectedIconColor = Color.Gray,
-                    selectedTextColor = Color(0xFFD35400),
-                    unselectedTextColor = Color.Gray
+
+                        if (currentRoute != item.route) {
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = eventPulseOrange.copy(alpha = 0.1f), // ሲመረጥ በስተጀርባ የሚኖረው ለስላሳ ቀለም
+                        selectedIconColor = eventPulseOrange,
+                        unselectedIconColor = inactiveGray,
+                        selectedTextColor = eventPulseOrange,
+                        unselectedTextColor = inactiveGray
+                    )
                 )
-            )
+            }
         }
     }
 }

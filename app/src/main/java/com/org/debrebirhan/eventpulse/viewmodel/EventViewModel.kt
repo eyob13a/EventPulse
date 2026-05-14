@@ -5,45 +5,56 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import com.org.debrebirhan.eventpulse.data.Event
-import com.org.debrebirhan.eventpulse.data.EventRepository
+import com.org.debrebirhan.eventpulse.data.Booking // Booking ሞዴልን እንጠቀማለን
 
 class EventViewModel : ViewModel() {
 
-    private val repository = EventRepository()
     private val db = FirebaseFirestore.getInstance()
 
+    // ---------------- EVENTS ----------------
+    private val _events = mutableStateOf<List<Event>>(emptyList())
+    val events: State<List<Event>> = _events
 
-    var events = mutableStateOf<List<Event>>(emptyList())
-        private set
+    // ---------------- MY TICKETS (Bookings) ----------------
+    // 🚩 ዳታውን በ Booking ሞዴል መልክ ብንይዘው ለ UI ይቀላል
+    private val _myTickets = mutableStateOf<List<Booking>>(emptyList())
+    val myTickets: State<List<Booking>> = _myTickets
 
-
-    private val _myTickets = mutableStateOf<List<Map<String, Any>>>(emptyList())
-    val myTickets: State<List<Map<String, Any>>> = _myTickets
-
+    // ---------------- LOADING ----------------
     var isFetching = mutableStateOf(false)
         private set
 
-    init {
-        fetchEvents()
-    }
-
-
+    // ---------------- SAFE FETCH EVENTS (Approved Only) ----------------
     fun fetchEvents() {
         isFetching.value = true
-        repository.getAllEvents { eventList ->
-            events.value = eventList
-            isFetching.value = false
-        }
-    }
 
-
-    fun fetchEventsByCategory(category: String) {
-        isFetching.value = true
         db.collection("events")
-            .whereEqualTo("category", category)
+            .whereEqualTo("status", "approved")
             .get()
             .addOnSuccessListener { result ->
-                events.value = result.toObjects(Event::class.java)
+                _events.value = result.documents.mapNotNull { doc ->
+                    doc.toObject(Event::class.java)?.copy(id = doc.id)
+                }
+                isFetching.value = false
+            }
+            .addOnFailureListener {
+                isFetching.value = false
+                _events.value = emptyList()
+            }
+    }
+
+    // ---------------- CATEGORY (Approved Only) ----------------
+    fun fetchEventsByCategory(category: String) {
+        isFetching.value = true
+
+        db.collection("events")
+            .whereEqualTo("category", category)
+            .whereEqualTo("status", "approved")
+            .get()
+            .addOnSuccessListener { result ->
+                _events.value = result.documents.mapNotNull { doc ->
+                    doc.toObject(Event::class.java)?.copy(id = doc.id)
+                }
                 isFetching.value = false
             }
             .addOnFailureListener {
@@ -51,28 +62,62 @@ class EventViewModel : ViewModel() {
             }
     }
 
-
+    // ---------------- TICKETS (FETCH FROM BOOKINGS) ----------------
     fun fetchMyTickets(userId: String) {
-        db.collection("tickets")
+        if (userId.isEmpty()) return
+
+        // 🚩 ማሳሰቢያ፡ በ PaymentScreen ላይ ዳታውን የምናስቀምጠው "bookings" ውስጥ ስለሆነ
+        // እዚህም ከ "bookings" መፈለግ አለበት።
+        db.collection("bookings")
             .whereEqualTo("userId", userId)
             .get()
             .addOnSuccessListener { result ->
-                _myTickets.value = result.documents.mapNotNull { it.data }
+                _myTickets.value = result.documents.mapNotNull { doc ->
+                    doc.toObject(Booking::class.java)
+                }
             }
             .addOnFailureListener {
                 _myTickets.value = emptyList()
             }
     }
 
-
-    fun addEvent(event: Event, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        repository.addEvent(event) { success ->
-            if (success) {
+    // ---------------- ADD EVENT ----------------
+    fun addEvent(
+        event: Event,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        db.collection("events")
+            .add(event)
+            .addOnSuccessListener {
                 fetchEvents()
                 onSuccess()
-            } else {
-                onError("Failed to add event")
             }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Failed to add event")
+            }
+    }
+
+    // ---------------- UPDATE EVENT ----------------
+    fun updateEvent(
+        event: Event,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        if (event.id.isBlank()) {
+            onError("Event ID is missing")
+            return
         }
+
+        db.collection("events")
+            .document(event.id)
+            .set(event)
+            .addOnSuccessListener {
+                fetchEvents()
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Failed to update event")
+            }
     }
 }

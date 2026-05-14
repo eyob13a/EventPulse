@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,11 +29,13 @@ import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
+import com.org.debrebirhan.eventpulse.navigation.BottomNavItem
 import com.org.debrebirhan.eventpulse.viewmodel.AuthViewModel
 import com.org.debrebirhan.eventpulse.viewmodel.EventViewModel
 import java.io.File
 import java.io.FileOutputStream
 
+// 🔹 QR Code የማመንጫ ፈንክሽን (ያለ ለውጥ የቀጠለ)
 fun generateQRCode(content: String): Bitmap? {
     return try {
         val writer = QRCodeWriter()
@@ -49,6 +52,7 @@ fun generateQRCode(content: String): Bitmap? {
     } catch (e: Exception) { null }
 }
 
+// 🔹 ቲኬቱን እንደ ምስል ሴቭ ማድረጊያ (ያለ ለውጥ የቀጠለ)
 fun saveTicketAsImage(context: Context, eventName: String, ticketId: String) {
     val width = 1000
     val height = 500
@@ -57,12 +61,10 @@ fun saveTicketAsImage(context: Context, eventName: String, ticketId: String) {
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     paint.color = android.graphics.Color.WHITE
-    val leftRect = RectF(0f, 0f, 650f, 500f)
-    canvas.drawRoundRect(leftRect, 40f, 40f, paint)
+    canvas.drawRoundRect(RectF(0f, 0f, 650f, 500f), 40f, 40f, paint)
 
     paint.color = android.graphics.Color.parseColor("#D35400")
-    val rightRect = RectF(650f, 0f, 1000f, 500f)
-    canvas.drawRoundRect(rightRect, 40f, 40f, paint)
+    canvas.drawRoundRect(RectF(650f, 0f, 1000f, 500f), 40f, 40f, paint)
     canvas.drawRect(650f, 0f, 680f, 500f, paint)
 
     paint.color = android.graphics.Color.BLACK
@@ -70,8 +72,7 @@ fun saveTicketAsImage(context: Context, eventName: String, ticketId: String) {
     paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     canvas.drawText(eventName, 80f, 100f, paint)
 
-    val qrBitmap = generateQRCode("Ticket:$ticketId")
-    qrBitmap?.let {
+    generateQRCode("Ticket:$ticketId")?.let {
         val scaledQr = Bitmap.createScaledBitmap(it, 250, 250, false)
         canvas.drawBitmap(scaledQr, 200f, 160f, paint)
     }
@@ -82,31 +83,22 @@ fun saveTicketAsImage(context: Context, eventName: String, ticketId: String) {
     canvas.drawText("EVENT PULSE", 825f, 220f, paint)
     canvas.drawText("ኢቨንት ፑልስ", 825f, 280f, paint)
 
-    val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-    val fileName = "EventPulse_${eventName.replace(" ", "_")}.jpg"
-    val file = File(directory, fileName)
-
     try {
+        val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        val file = File(directory, "EventPulse_${eventName.replace(" ", "_")}.jpg")
         val out = FileOutputStream(file)
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
         out.flush()
         out.close()
 
-        val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
-        val contentUri = Uri.fromFile(file)
-        mediaScanIntent.data = contentUri
-        context.sendBroadcast(mediaScanIntent)
-
+        context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)))
         Toast.makeText(context, "Ticket saved to Gallery", Toast.LENGTH_LONG).show()
 
-        val uri = FileProvider.getUriForFile(context, "com.org.debrebirhan.eventpulse.provider", file)
-        val intent = Intent(Intent.ACTION_VIEW).apply {
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+        context.startActivity(Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "image/jpeg")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(intent)
-
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        })
     } catch (e: Exception) {
         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
     }
@@ -130,7 +122,23 @@ fun MyTicketsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("My Tickets", fontWeight = FontWeight.Bold) })
+            CenterAlignedTopAppBar(
+                title = { Text("My Tickets", fontWeight = FontWeight.Bold) },
+                // 🚩 መፍትሄው እዚህ ጋር ነው፡ ወደ ሆም የሚመልስ በተን ተጨምሯል
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate(BottomNavItem.Home.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back to Home")
+                    }
+                }
+            )
         }
     ) { padding ->
         if (myTickets.isEmpty()) {
@@ -144,8 +152,8 @@ fun MyTicketsScreen(
             ) {
                 items(myTickets) { ticket ->
                     TicketItem(
-                        eventName = ticket["eventName"]?.toString() ?: "Unknown Event",
-                        ticketId = ticket["purchaseDate"]?.toString() ?: "ID-001"
+                        eventName = ticket.eventTitle,
+                        ticketId = ticket.bookingId
                     )
                 }
             }
@@ -159,30 +167,29 @@ fun TicketItem(eventName: String, ticketId: String) {
     val eventPulseOrange = Color(0xFFD35400)
 
     Card(
-        modifier = Modifier.fillMaxWidth().height(200.dp),
+        modifier = Modifier.fillMaxWidth().height(180.dp),
         onClick = { saveTicketAsImage(context, eventName, ticketId) },
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier.weight(0.65f).fillMaxHeight().background(Color.White).padding(16.dp),
+                modifier = Modifier.weight(0.65f).fillMaxHeight().background(Color.White).padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(text = eventName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                Spacer(modifier = Modifier.height(10.dp))
+                Text(text = eventName, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Spacer(modifier = Modifier.height(8.dp))
 
                 val qrBitmap = remember(ticketId) { generateQRCode("Ticket:$ticketId") }
                 qrBitmap?.let {
-                    Image(bitmap = it.asImageBitmap(), contentDescription = "QR Code", modifier = Modifier.size(90.dp))
+                    Image(bitmap = it.asImageBitmap(), contentDescription = "QR Code", modifier = Modifier.size(80.dp))
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Download, contentDescription = null, tint = eventPulseOrange, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "Tap to Download", fontSize = 10.sp, color = eventPulseOrange)
+                    Text(text = " Download Ticket", fontSize = 10.sp, color = eventPulseOrange)
                 }
             }
 

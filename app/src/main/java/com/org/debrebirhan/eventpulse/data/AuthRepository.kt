@@ -6,24 +6,43 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class AuthRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance() // Firestore ተጨምሯል
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
-
-    fun signUp(name: String, phone: String, email: String, pass: String, onResult: (Boolean, String?) -> Unit) {
+    // የተሻሻለው signUp ፈንክሽን
+    fun signUp(
+        name: String,
+        phone: String,
+        email: String,
+        pass: String,
+        role: String,           // አዲስ ተጨምሯል
+        orgName: String? = null, // አዲስ ተጨምሯል
+        orgPhone: String? = null, // አዲስ ተጨምሯል
+        onResult: (Boolean, String?) -> Unit
+    ) {
         auth.createUserWithEmailAndPassword(email, pass)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val userId = auth.currentUser?.uid
-                    val userMap = hashMapOf(
+
+                    // ዳታቤዝ ላይ የሚቀመጥ መሰረታዊ መረጃ
+                    val userMap = mutableMapOf<String, Any>(
+                        "uid" to (userId ?: ""),
                         "fullName" to name,
                         "phone" to phone,
                         "email" to email,
+                        "role" to role,
+                        "isApproved" to (role == "Attendee"), // ተሳታፊ ከሆነ ወዲያውኑ ይፈቀድለታል
                         "createdAt" to System.currentTimeMillis()
                     )
 
+                    // አዘጋጅ ከሆነ ተጨማሪ የድርጅት መረጃዎችን እንጨምራለን
+                    if (role == "Organizer") {
+                        userMap["orgName"] = orgName ?: ""
+                        userMap["orgPhone"] = orgPhone ?: ""
+                    }
 
                     userId?.let { id ->
                         db.collection("users").document(id).set(userMap)

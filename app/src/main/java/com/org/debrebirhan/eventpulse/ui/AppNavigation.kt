@@ -1,11 +1,18 @@
 package com.org.debrebirhan.eventpulse.ui
 
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.*
+import androidx.navigation.compose.*
 import com.org.debrebirhan.eventpulse.navigation.BottomNavItem
+import com.org.debrebirhan.eventpulse.viewmodel.AdminViewModel
 import com.org.debrebirhan.eventpulse.viewmodel.AuthViewModel
 import com.org.debrebirhan.eventpulse.viewmodel.EventViewModel
 
@@ -16,101 +23,206 @@ fun AppNavigation(
     eventViewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
-    val startDestination = if (authViewModel.isUserLoggedIn()) BottomNavItem.Home.route else "login"
+    val adminViewModel: AdminViewModel = viewModel()
+    val userData by authViewModel.userData.collectAsState()
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier
-    ) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
-        composable("login") {
-            LoginScreen(
-                viewModel = authViewModel,
-                onNavigateToSignUp = { navController.navigate("signup") },
-                onLoginSuccess = {
-                    navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo("login") { inclusive = true }
-                    }
-                }
-            )
-        }
+    val showBottomBar = currentRoute != "login" &&
+            currentRoute != "signup" &&
+            currentRoute != "admin_dashboard" &&
+            currentRoute != "organizer_dashboard" &&
+            currentRoute != "approvals" &&
+            currentRoute != "manage_users" &&
+            currentRoute != "create_event" &&
+            currentRoute != "check_role" &&
+            currentRoute?.startsWith("payment") == false
 
-        composable("signup") {
-            SignUpScreen(viewModel = authViewModel, onNavigateBack = { navController.popBackStack() })
-        }
-
-        composable(BottomNavItem.Home.route) {
-            HomeScreen(
-                authViewModel = authViewModel,
-                eventViewModel = eventViewModel,
-                onLogout = {
-                    authViewModel.logout()
-                    navController.navigate("login") { popUpTo(BottomNavItem.Home.route) { inclusive = true } }
-                },
-                onEventClick = { eventId -> navController.navigate("detail/$eventId") },
-                onAddEventClick = { navController.navigate("create_event") }
-            )
-        }
-
-
-        composable(BottomNavItem.Search.route) {
-            SearchScreen(
-                navController = navController,
-                authViewModel = authViewModel,
-                eventViewModel = eventViewModel,
-                onLogout = {
-                    authViewModel.logout()
-                    navController.navigate("login") {
-                        popUpTo(BottomNavItem.Home.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(BottomNavItem.Tickets.route) {
-            MyTicketsScreen(navController, eventViewModel, authViewModel)
-        }
-
-        composable(BottomNavItem.Profile.route) {
-            ProfileScreen(navController, authViewModel)
-        }
-
-        composable("create_event") {
-            CreateEventScreen(
-                authViewModel = authViewModel,
-                eventViewModel = eventViewModel,
-                organizerId = authViewModel.currentUserId ?: "",
-                onBack = { navController.popBackStack() },
-                onSuccess = { navController.popBackStack() }
-            )
-        }
-
-        composable("detail/{eventId}") { backStackEntry ->
-            val eventId = backStackEntry.arguments?.getString("eventId")
-            val event = eventViewModel.events.value.find { it.id == eventId }
-            event?.let {
-                EventDetailScreen(
-                    event = it,
-                    onBack = { navController.popBackStack() },
-                    onBookTicket = { navController.navigate("payment/${it.title}/${it.price}") }
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                EventPulseBottomNavigation(
+                    navController = navController,
+                    eventViewModel = eventViewModel,
+                    authViewModel = authViewModel
                 )
             }
         }
+    ) { innerPadding ->
 
-        composable("payment/{eventName}/{price}") { backStackEntry ->
-            val eventName = backStackEntry.arguments?.getString("eventName") ?: ""
-            val price = backStackEntry.arguments?.getString("price") ?: ""
-            PaymentScreen(
-                eventName = eventName,
-                price = price,
-                onBack = { navController.popBackStack() },
-                onPaymentSuccess = {
-                    navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo(BottomNavItem.Home.route) { inclusive = true }
+        NavHost(
+            navController = navController,
+            startDestination = BottomNavItem.Home.route,
+            modifier = modifier.padding(innerPadding)
+        ) {
+
+            // 🔹 ROLE CHECK
+            composable("check_role") {
+                LaunchedEffect(userData) {
+                    if (userData == null) authViewModel.fetchUserProfile()
+                    userData?.let { data ->
+                        val role = data["role"] as? String
+                        when (role) {
+                            "admin" -> navController.navigate("admin_dashboard") { popUpTo("check_role") { inclusive = true } }
+                            "Organizer" -> navController.navigate("organizer_dashboard") { popUpTo("check_role") { inclusive = true } }
+                            else -> navController.navigate(BottomNavItem.Home.route) { popUpTo("check_role") { inclusive = true } }
+                        }
                     }
                 }
-            )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFD35400))
+                }
+            }
+
+            // 🔹 LOGIN & SIGNUP
+            composable("login") {
+                LoginScreen(
+                    viewModel = authViewModel,
+                    onNavigateToSignUp = { navController.navigate("signup") },
+                    onLoginSuccess = { navController.navigate("check_role") { popUpTo("login") { inclusive = true } } }
+                )
+            }
+            composable("signup") {
+                SignUpScreen(viewModel = authViewModel, onNavigateBack = { navController.popBackStack() })
+            }
+
+            // 🔹 HOME SCREEN
+            composable(BottomNavItem.Home.route) {
+                HomeScreen(
+                    authViewModel = authViewModel,
+                    eventViewModel = eventViewModel,
+                    navController = navController,
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate("login") { popUpTo(0) { inclusive = true } }
+                    },
+                    onEventClick = { eventId -> navController.navigate("detail/$eventId") },
+                    onAddEventClick = {
+                        if (authViewModel.isUserLoggedIn()) navController.navigate("create_event")
+                        else navController.navigate("login")
+                    }
+                )
+            }
+
+            // 🔹 SEARCH SCREEN
+            composable(BottomNavItem.Search.route) {
+                SearchScreen(
+                    navController = navController,
+                    authViewModel = authViewModel,
+                    eventViewModel = eventViewModel,
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate("login") { popUpTo(0) { inclusive = true } }
+                    }
+                )
+            }
+
+            // 🔹 TICKETS
+            composable(BottomNavItem.Tickets.route) {
+                if (authViewModel.isUserLoggedIn()) {
+                    MyTicketsScreen(
+                        authViewModel = authViewModel,
+                        eventViewModel = eventViewModel,
+                        navController = navController
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navController.navigate("login") }
+                }
+            }
+
+            // 🔹 PROFILE SCREEN
+            composable(BottomNavItem.Profile.route) {
+                if (authViewModel.isUserLoggedIn()) {
+                    ProfileScreen(
+                        navController = navController,
+                        authViewModel = authViewModel
+                    )
+                } else {
+                    LaunchedEffect(Unit) {
+                        navController.navigate("login")
+                    }
+                }
+            }
+
+            // 🔹 EVENT DETAIL
+            composable("detail/{eventId}") { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getString("eventId")
+                val events by eventViewModel.events
+                val event = events.find { it.id == eventId }
+
+                event?.let {
+                    EventDetailScreen(
+                        event = it,
+                        authViewModel = authViewModel,
+                        navController = navController,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+            }
+
+            // 🔹 PAYMENT SCREEN
+            composable(
+                route = "payment/{eventName}/{price}/{eventDate}",
+                arguments = listOf(
+                    navArgument("eventName") { type = NavType.StringType },
+                    navArgument("price") { type = NavType.StringType },
+                    navArgument("eventDate") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                PaymentScreen(
+                    viewModel = authViewModel,
+                    eventName = backStackEntry.arguments?.getString("eventName") ?: "",
+                    price = backStackEntry.arguments?.getString("price") ?: "",
+                    eventDate = backStackEntry.arguments?.getString("eventDate") ?: "",
+                    onBack = { navController.popBackStack() },
+                    onPaymentSuccess = {
+                        navController.navigate(BottomNavItem.Tickets.route) {
+                            popUpTo(BottomNavItem.Home.route) { inclusive = false }
+                        }
+                    }
+                )
+            }
+
+            // 🔹 ORGANIZER DASHBOARD (🚩 እዚህ ጋር ነው የተስተካከለው)
+            composable("organizer_dashboard") {
+                OrganizerDashboardScreen(
+                    eventViewModel = eventViewModel, // የተጨመረ
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate("login") { popUpTo(0) { inclusive = true } }
+                    },
+                    onCreateEvent = { navController.navigate("create_event") },
+                    onEventClick = { eventId -> navController.navigate("detail/$eventId") } // የተጨመረ
+                )
+            }
+
+            // 🔹 ADMIN DASHBOARD
+            composable("admin_dashboard") {
+                AdminDashboardScreen(
+                    adminViewModel = adminViewModel,
+                    onManageUsers = { navController.navigate("manage_users") },
+                    onManageEvents = { navController.navigate("approvals") },
+                    onCRUDEvents = { navController.navigate("manage_events_crud") },
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate("login") { popUpTo(0) { inclusive = true } }
+                    }
+                )
+            }
+
+            composable("create_event") {
+                CreateEventScreen(
+                    authViewModel = authViewModel,
+                    eventViewModel = eventViewModel,
+                    organizerId = authViewModel.currentUserId ?: "",
+                    onBack = { navController.popBackStack() },
+                    onSuccess = { navController.popBackStack() }
+                )
+            }
+            composable("approvals") { ApprovalsScreen(adminViewModel = adminViewModel, onBack = { navController.popBackStack() }) }
+            composable("manage_users") { ManageUsersScreen(adminViewModel = adminViewModel, onBack = { navController.popBackStack() }) }
+            composable("manage_events_crud") { Box(Modifier.fillMaxSize()) { Text("CRUD Management Screen", Modifier.align(Alignment.Center)) } }
         }
     }
 }

@@ -16,13 +16,26 @@ import androidx.compose.ui.unit.sp
 import com.org.debrebirhan.eventpulse.viewmodel.AuthViewModel
 
 @Composable
-fun LoginScreen(viewModel: AuthViewModel, onNavigateToSignUp: () -> Unit, onLoginSuccess: () -> Unit) {
+fun LoginScreen(
+    viewModel: AuthViewModel,
+    onNavigateToSignUp: () -> Unit,
+    onLoginSuccess: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+
+    // 🚩 ስህተቱ መኖሩንና አለመኖሩን የምንከታተልበት
     var errorMessage by remember { mutableStateOf("") }
 
     val eventPulseOrange = Color(0xFFD35400)
+
+    // አዲስ ሙከራ ሲጀመር የድሮ ስህተቶችን ለማጽዳት
+    LaunchedEffect(email, password) {
+        if (errorMessage.isNotEmpty()) {
+            errorMessage = ""
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -46,7 +59,8 @@ fun LoginScreen(viewModel: AuthViewModel, onNavigateToSignUp: () -> Unit, onLogi
             onValueChange = { email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            singleLine = true
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -58,15 +72,18 @@ fun LoginScreen(viewModel: AuthViewModel, onNavigateToSignUp: () -> Unit, onLogi
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            singleLine = true
         )
 
+        // 🚩 ስህተት ካለ እዚህ ጋር ይታያል
         if (errorMessage.isNotEmpty()) {
             Text(
                 text = errorMessage,
                 color = Color.Red,
                 fontSize = 14.sp,
-                modifier = Modifier.padding(top = 8.dp)
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 12.dp)
             )
         }
 
@@ -81,13 +98,15 @@ fun LoginScreen(viewModel: AuthViewModel, onNavigateToSignUp: () -> Unit, onLogi
                         errorMessage = "Please enter both email and password"
                     } else {
                         isLoading = true
+                        errorMessage = "" // ሙከራ ሲጀመር ስህተቱን አጽዳ
 
-                        viewModel.signIn(email, password) { success: Boolean, error: String? ->
+                        viewModel.signIn(email, password) { success, error ->
                             isLoading = false
                             if (success) {
                                 onLoginSuccess()
                             } else {
-                                errorMessage = error ?: "Login Failed"
+                                // 🚩 Firebase የሚልከውን ስህተት እዚህ ጋር እናሳያለን
+                                errorMessage = error ?: "Incorrect email or password. Please try again."
                             }
                         }
                     }
@@ -95,10 +114,13 @@ fun LoginScreen(viewModel: AuthViewModel, onNavigateToSignUp: () -> Unit, onLogi
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = eventPulseOrange)
             ) {
-                Text("Login", fontSize = 18.sp, color = Color.White)
+                Text("Login", fontSize = 18.sp, color = Color.White, fontWeight = FontWeight.Bold)
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(onClick = onNavigateToSignUp) {
                 Text("Don't have an account? Sign Up", color = eventPulseOrange)

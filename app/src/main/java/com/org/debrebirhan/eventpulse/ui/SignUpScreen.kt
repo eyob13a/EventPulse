@@ -2,7 +2,9 @@ package com.org.debrebirhan.eventpulse.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,16 +24,24 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+
+    // --- አዳዲስ የሮል መለያዎች ---
+    var selectedRole by remember { mutableStateOf("Attendee") } // Default Attendee ነው
+    var orgName by remember { mutableStateOf("") }
+    var orgPhone by remember { mutableStateOf("") }
+
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
     val eventPulseOrange = Color(0xFFD35400)
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(scrollState), // ለሞባይል ስክሪን እንዲመች scrolling ጨምሬበታለሁ
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -53,30 +63,7 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
                 focusedContainerColor = Color(0xFFFDF2E9),
                 unfocusedContainerColor = Color(0xFFF2F2F2),
                 focusedIndicatorColor = eventPulseOrange,
-                focusedLabelColor = eventPulseOrange,
-                cursorColor = eventPulseOrange
-            )
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Phone Number Field
-        TextField(
-            value = phoneNumber,
-            onValueChange = {
-                if (it.startsWith("+251")) {
-                    phoneNumber = it
-                }
-            },
-            label = { Text("Phone Number") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFFDF2E9),
-                unfocusedContainerColor = Color(0xFFF2F2F2),
-                focusedIndicatorColor = eventPulseOrange,
-                focusedLabelColor = eventPulseOrange,
-                cursorColor = eventPulseOrange
+                focusedLabelColor = eventPulseOrange
             )
         )
 
@@ -93,10 +80,66 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
                 focusedContainerColor = Color(0xFFFDF2E9),
                 unfocusedContainerColor = Color(0xFFF2F2F2),
                 focusedIndicatorColor = eventPulseOrange,
-                focusedLabelColor = eventPulseOrange,
-                cursorColor = eventPulseOrange
+                focusedLabelColor = eventPulseOrange
             )
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- Role Selection Section ---
+        Text(
+            text = "Register as:",
+            modifier = Modifier.align(Alignment.Start),
+            fontWeight = FontWeight.Medium,
+            color = Color.Gray
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = selectedRole == "Attendee",
+                onClick = { selectedRole = "Attendee" },
+                colors = RadioButtonDefaults.colors(selectedColor = eventPulseOrange)
+            )
+            Text("Attendee")
+            Spacer(modifier = Modifier.width(16.dp))
+            RadioButton(
+                selected = selectedRole == "Organizer",
+                onClick = { selectedRole = "Organizer" },
+                colors = RadioButtonDefaults.colors(selectedColor = eventPulseOrange)
+            )
+            Text("Organizer")
+        }
+
+        // --- ለአዘጋጅ (Organizer) ብቻ የሚታይ ተጨማሪ ፎርም ---
+        if (selectedRole == "Organizer") {
+            Spacer(modifier = Modifier.height(12.dp))
+            TextField(
+                value = orgName,
+                onValueChange = { orgName = it },
+                label = { Text("Organization Name") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFFDF2E9),
+                    unfocusedContainerColor = Color(0xFFF2F2F2),
+                    focusedIndicatorColor = eventPulseOrange
+                )
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            TextField(
+                value = orgPhone,
+                onValueChange = { orgPhone = it },
+                label = { Text("Organization Phone") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFFDF2E9),
+                    unfocusedContainerColor = Color(0xFFF2F2F2),
+                    focusedIndicatorColor = eventPulseOrange
+                )
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -107,13 +150,10 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color(0xFFFDF2E9),
                 unfocusedContainerColor = Color(0xFFF2F2F2),
-                focusedIndicatorColor = eventPulseOrange,
-                focusedLabelColor = eventPulseOrange,
-                cursorColor = eventPulseOrange
+                focusedIndicatorColor = eventPulseOrange
             )
         )
 
@@ -126,13 +166,10 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
             label = { Text("Confirm Password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color(0xFFFDF2E9),
                 unfocusedContainerColor = Color(0xFFF2F2F2),
-                focusedIndicatorColor = eventPulseOrange,
-                focusedLabelColor = eventPulseOrange,
-                cursorColor = eventPulseOrange
+                focusedIndicatorColor = eventPulseOrange
             )
         )
 
@@ -154,34 +191,34 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
                 onClick = {
                     if (password != confirmPassword) {
                         errorMessage = "Passwords do not match!"
-                    } else if (fullName.isEmpty() || email.isEmpty() || phoneNumber.length < 13) {
-                        errorMessage = "Please fill all fields correctly"
+                    } else if (fullName.isEmpty() || email.isEmpty()) {
+                        errorMessage = "Please fill all required fields"
+                    } else if (selectedRole == "Organizer" && (orgName.isEmpty() || orgPhone.isEmpty())) {
+                        errorMessage = "Please fill Organization details"
                     } else {
                         isLoading = true
-
-
-                        viewModel.signUp(fullName, phoneNumber, email, password) { success: Boolean, error: String? ->
+                        // አዲሱን ሎጂክ ወደ ViewModel መላክ (የሚቀጥለው ፋይላችን ይሆናል)
+                        viewModel.signUp(
+                            fullName,
+                            phoneNumber,
+                            email,
+                            password,
+                            selectedRole,
+                            orgName,
+                            orgPhone
+                        ) { success, error ->
                             isLoading = false
-                            if (success) {
-                                onNavigateBack()
-                            } else {
-                                errorMessage = error ?: "Registration Failed"
-                            }
+                            if (success) onNavigateBack() else errorMessage = error ?: "Registration Failed"
                         }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = eventPulseOrange)
             ) {
                 Text("Register", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White)
             }
 
-            TextButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
+            TextButton(onClick = onNavigateBack, modifier = Modifier.padding(top = 8.dp)) {
                 Text("Already have an account? Login", color = eventPulseOrange)
             }
         }
