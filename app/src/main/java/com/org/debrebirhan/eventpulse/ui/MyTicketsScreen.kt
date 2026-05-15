@@ -200,7 +200,7 @@ fun TicketItem(eventName: String, ticketId: String) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "EVENT PULSE", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                     Text(text = "ኢቨንት ፑልስ", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
+                         }
             }
         }
     }

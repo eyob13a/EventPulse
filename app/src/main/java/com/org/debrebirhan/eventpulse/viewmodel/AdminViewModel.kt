@@ -2,6 +2,7 @@ package com.org.debrebirhan.eventpulse.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.org.debrebirhan.eventpulse.data.Event
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,15 +11,19 @@ class AdminViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
 
-    // ---------------- USERS ----------------
+    // ---------------- USERS STATE ----------------
     private val _users = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val users: StateFlow<List<Map<String, Any>>> = _users
 
-    // ---------------- PENDING EVENTS ----------------
+    // ---------------- PENDING EVENTS STATE ----------------
     private val _pendingEvents = MutableStateFlow<List<Event>>(emptyList())
     val pendingEvents: StateFlow<List<Event>> = _pendingEvents
 
-    // ---------------- STATS ----------------
+    // ---------------- ALL APPROVED EVENTS STATE (For CRUD) ----------------
+    private val _allApprovedEvents = MutableStateFlow<List<Event>>(emptyList())
+    val allApprovedEvents: StateFlow<List<Event>> = _allApprovedEvents
+
+    // ---------------- STATISTICS STATES (Real-time Counts) ----------------
     private val _totalEventsCount = MutableStateFlow(0)
     val totalEventsCount: StateFlow<Int> = _totalEventsCount
 
@@ -28,55 +33,61 @@ class AdminViewModel : ViewModel() {
     private val _pendingApprovalsCount = MutableStateFlow(0)
     val pendingApprovalsCount: StateFlow<Int> = _pendingApprovalsCount
 
-    private val _reportedIssuesCount = MutableStateFlow(0)
-    val reportedIssuesCount: StateFlow<Int> = _reportedIssuesCount
-
-    // ---------------- FETCH STATS ----------------
+    // ---------------- FETCH STATS (Real-time Database Count) ----------------
     fun fetchStats() {
-        // የጸደቁ ኢቨንቶች ብዛት
+        // 1. የጸደቁ ኢቨንቶች ብዛት (Total Approved Events)
         db.collection("events")
             .whereEqualTo("status", "approved")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                _totalEventsCount.value = snapshot.size()
+            .addSnapshotListener { snapshot, error ->
+                if (error == null) {
+                    _totalEventsCount.value = snapshot?.size() ?: 0
+                }
             }
 
-        // ገና ያልጸደቁ (Pending) ኢቨንቶች ብዛት
+        // 2. በመጠባበቅ ላይ ያሉ ጥያቄዎች (Pending Approvals)
         db.collection("events")
             .whereEqualTo("status", "pending")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                _pendingApprovalsCount.value = snapshot.size()
+            .addSnapshotListener { snapshot, error ->
+                if (error == null) {
+                    _pendingApprovalsCount.value = snapshot?.size() ?: 0
+                }
             }
 
-        // ሪፖርቶች
-        db.collection("reports")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                _reportedIssuesCount.value = snapshot.size()
-            }
-
-        // ተጠቃሚዎች
+        // 3. ጠቅላላ የተጠቃሚዎች ብዛት (Total Users from Database)
         db.collection("users")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                _totalUsersCount.value = snapshot.size()
+            .addSnapshotListener { snapshot, error ->
+                if (error == null) {
+                    _totalUsersCount.value = snapshot?.size() ?: 0
+                }
             }
     }
 
-    // ---------------- FETCH PENDING EVENTS ----------------
+    // ---------------- FETCH PENDING EVENTS LIST ----------------
     fun fetchPendingEvents() {
         db.collection("events")
             .whereEqualTo("status", "pending")
             .get()
             .addOnSuccessListener { snapshot ->
                 _pendingEvents.value = snapshot.documents.mapNotNull { doc ->
-                    // Document ID ን ወደ Event object ውስጥ መክተት አስፈላጊ ነው
                     doc.toObject(Event::class.java)?.copy(id = doc.id)
                 }
             }
             .addOnFailureListener {
                 _pendingEvents.value = emptyList()
+            }
+    }
+
+    // ---------------- FETCH ALL APPROVED EVENTS (For All Events Screen) ----------------
+    fun fetchAllApprovedEvents() {
+        db.collection("events")
+            .whereEqualTo("status", "approved")
+            .orderBy("date", Query.Direction.DESCENDING) // በቅርብ ቀን ያሉትን ለማስቀደም
+            .addSnapshotListener { snapshot, error ->
+                if (error == null) {
+                    _allApprovedEvents.value = snapshot?.documents?.mapNotNull { doc ->
+                        doc.toObject(Event::class.java)?.copy(id = doc.id)
+                    } ?: emptyList()
+                }
             }
     }
 
@@ -87,13 +98,9 @@ class AdminViewModel : ViewModel() {
         db.collection("events").document(eventId)
             .update("status", newStatus)
             .addOnSuccessListener {
-                // ሁኔታው ሲቀየር ወዲያውኑ ዳሽቦርዱን እና ዝርዝሩን እናድሳለን
-                fetchStats()
+                // ቁጥሮቹ በ SnapshotListener አማካኝነት በራሳቸው ይዘመናሉ
                 fetchPendingEvents()
                 onSuccess()
-            }
-            .addOnFailureListener {
-                // ስህተት ካለ እዚህ ጋር መያዝ ይቻላል
             }
     }
 
@@ -114,19 +121,19 @@ class AdminViewModel : ViewModel() {
         db.collection("users").document(uid)
             .delete()
             .addOnSuccessListener {
-                fetchStats()
                 fetchAllUsers()
                 onSuccess()
             }
     }
 
-    // ---------------- DELETE EVENT ----------------
+    // ---------------- DELETE EVENT (CRUD Action) ----------------
     fun deleteEvent(eventId: String, onSuccess: () -> Unit = {}) {
         db.collection("events").document(eventId)
             .delete()
             .addOnSuccessListener {
-                fetchStats()
+                // ዝርዝሮቹን ማደስ
                 fetchPendingEvents()
+                fetchAllApprovedEvents()
                 onSuccess()
             }
     }

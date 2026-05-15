@@ -36,6 +36,7 @@ fun AppNavigation(
             currentRoute != "approvals" &&
             currentRoute != "manage_users" &&
             currentRoute != "create_event" &&
+            currentRoute != "manage_events_crud" && // 🚩 እዚህ ጋር ተጨምሯል
             currentRoute != "check_role" &&
             currentRoute?.startsWith("payment") == false
 
@@ -184,16 +185,16 @@ fun AppNavigation(
                 )
             }
 
-            // 🔹 ORGANIZER DASHBOARD (🚩 እዚህ ጋር ነው የተስተካከለው)
+            // 🔹 ORGANIZER DASHBOARD
             composable("organizer_dashboard") {
                 OrganizerDashboardScreen(
-                    eventViewModel = eventViewModel, // የተጨመረ
+                    eventViewModel = eventViewModel,
                     onLogout = {
                         authViewModel.logout()
                         navController.navigate("login") { popUpTo(0) { inclusive = true } }
                     },
                     onCreateEvent = { navController.navigate("create_event") },
-                    onEventClick = { eventId -> navController.navigate("detail/$eventId") } // የተጨመረ
+                    onEventClick = { eventId -> navController.navigate("detail/$eventId") }
                 )
             }
 
@@ -222,7 +223,16 @@ fun AppNavigation(
             }
             composable("approvals") { ApprovalsScreen(adminViewModel = adminViewModel, onBack = { navController.popBackStack() }) }
             composable("manage_users") { ManageUsersScreen(adminViewModel = adminViewModel, onBack = { navController.popBackStack() }) }
-            composable("manage_events_crud") { Box(Modifier.fillMaxSize()) { Text("CRUD Management Screen", Modifier.align(Alignment.Center)) } }
+
+            // 🚩 እዚህ ጋር ነው የተቀየረው፡ ባዶውን Text አጥፍተን AllEventsScreen ጠርተናል
+            composable("manage_events_crud") {
+                AllEventsScreen(
+                    adminViewModel = adminViewModel,
+                    onEditEvent = { event -> /* ገና ኤዲት ገጽ ስላልሰራህ ባዶ ነው */ },
+                    onAddEvent = { navController.navigate("create_event") },
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
