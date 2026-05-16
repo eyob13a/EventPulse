@@ -47,7 +47,9 @@ fun EventPulseBottomNavigation(
             val currentRoute = navBackStackEntry?.destination?.route
 
             items.forEach { item ->
-                val isSelected = currentRoute == item.route
+                // 🚩 ማሻሻያ፦ ተጠቃሚው Login ገጽ ላይ ቢሆንም እንኳ Tickets ወይም Profile መብራታቸውን በትክክል እንዲያውቅ ያደርጋል
+                val isSelected = currentRoute == item.route ||
+                        (currentRoute == "login" && (item.route == BottomNavItem.Tickets.route || item.route == BottomNavItem.Profile.route))
 
                 NavigationBarItem(
                     icon = {
@@ -73,14 +75,13 @@ fun EventPulseBottomNavigation(
                             eventViewModel.fetchEvents()
                         }
 
-                        if (currentRoute != item.route) {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                        // 🚩 ዋናው ማስተካከያ፦ ከትኬት ወይም ከሎጊን ገጽ ወደ ሆም ሲመለስ የ BackStack መቆለፍ ችግር እንዳይፈጠር ያደርጋል
+                        navController.navigate(item.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
                             }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     },
                     colors = NavigationBarItemDefaults.colors(

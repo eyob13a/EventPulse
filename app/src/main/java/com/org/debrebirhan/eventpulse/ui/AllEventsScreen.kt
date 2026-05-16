@@ -28,7 +28,7 @@ fun AllEventsScreen(
     val events by adminViewModel.allApprovedEvents.collectAsState()
     val adminBg = Color(0xFF121212)
 
-    // 🚩 ለ Delete Confirmation የሚያገለግሉ State-ዎች
+    // 🚩 Delete Confirmation States
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedEventForDelete by remember { mutableStateOf<Event?>(null) }
 
@@ -36,19 +36,33 @@ fun AllEventsScreen(
         adminViewModel.fetchAllApprovedEvents()
     }
 
-    // 🚩 የ Delete Confirmation Dialog (Cancel/OK)
+    // 🚩 Delete Confirmation Dialog (All Amharic text is completely removed and replaced with English)
     if (showDeleteDialog && selectedEventForDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Event ማጥፊያ") },
-            text = { Text("'${selectedEventForDelete?.title}' የሚለውን ኢቨንት ማጥፋት ትፈልጋለህ?") },
+            title = {
+                Text(
+                    text = "Delete Event",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to permanently delete '${selectedEventForDelete?.title}' from the system?",
+                    fontSize = 15.sp
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
-                    adminViewModel.deleteEvent(selectedEventForDelete!!.id)
+                    // Triggers the deletion logic in the viewmodel when OK is clicked
+                    selectedEventForDelete?.let { event ->
+                        adminViewModel.deleteEvent(event.id)
+                    }
                     showDeleteDialog = false
                     selectedEventForDelete = null
                 }) {
-                    Text("OK (አጥፋ)", color = Color.Red)
+                    Text("OK", color = Color.Red, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -56,7 +70,7 @@ fun AllEventsScreen(
                     showDeleteDialog = false
                     selectedEventForDelete = null
                 }) {
-                    Text("Cancel (ተው)")
+                    Text("Cancel", color = Color.Gray)
                 }
             }
         )
@@ -96,6 +110,7 @@ fun AllEventsScreen(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.EventBusy, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(50.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text("No approved events found.", color = Color.DarkGray)
                     }
                 }
@@ -108,10 +123,10 @@ fun AllEventsScreen(
                     items(events) { event ->
                         EventCrudCard(
                             event = event,
-                            onEdit = { onEditEvent(event) }, // 🚩 ኤዲት ሲነካ ወደ AppNavigation ይመለሳል
+                            onEdit = { onEditEvent(event) },
                             onDelete = {
                                 selectedEventForDelete = event
-                                showDeleteDialog = true // 🚩 ዲያሎጉን እንዲያሳይ
+                                showDeleteDialog = true
                             }
                         )
                     }
