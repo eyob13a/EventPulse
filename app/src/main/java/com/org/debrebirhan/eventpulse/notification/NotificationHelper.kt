@@ -25,7 +25,7 @@ class NotificationHelper(val context: Context) {
 
     fun showNotification(title: String, message: String) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // በኋላ በራስህ አይኮን ትቀይረዋለህ
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

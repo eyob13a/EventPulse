@@ -56,7 +56,6 @@ fun CreateEventScreen(
     var dateText by remember { mutableStateOf("") }
 
     // --- Category Dropdown State ---
-    // 🚩 እዚህ ጋር ነው የስም ቅያሬውን ብቻ ያደረግኩት (ከሆም ስክሪን አይኮኖች ጋር እንዲመሳሰል)
     val categories = listOf("Concerts", "Culture", "Seminars", "Festivals", "Sports", "Exhibitions", "Other")
     var selectedCategory by remember { mutableStateOf(categories[0]) }
     var expanded by remember { mutableStateOf(false) }

@@ -27,7 +27,7 @@ class AuthViewModel : ViewModel() {
     private val _userData = MutableStateFlow<Map<String, Any>?>(null)
     val userData: StateFlow<Map<String, Any>?> = _userData.asStateFlow()
 
-    // የገዛናቸውን ቲኬቶች ዝርዝር ለመያዝ
+
     private val _userTickets = MutableStateFlow<List<Booking>>(emptyList())
     val userTickets: StateFlow<List<Booking>> = _userTickets.asStateFlow()
 
@@ -35,7 +35,7 @@ class AuthViewModel : ViewModel() {
         private set
 
     init {
-        // አፑ ሲጀመር ተጠቃሚው ገብቶ ከሆነ ዳታውን ያመጣል
+
         if (isUserLoggedIn()) {
             fetchUserProfile()
             fetchUserTickets()
@@ -68,7 +68,7 @@ class AuthViewModel : ViewModel() {
             }
     }
 
-    // ተጠቃሚው የገዛቸውን ቲኬቶች ከ Firestore ማምጫ
+
     fun fetchUserTickets() {
         val uid = auth.currentUser?.uid ?: return
 
@@ -76,7 +76,7 @@ class AuthViewModel : ViewModel() {
             .whereEqualTo("userId", uid)
             .get()
             .addOnSuccessListener { result ->
-                // Booking ሞዴልህ ከ Firestore ፊልዶች ጋር መመሳሰሉን እርግጠኛ ሁን
+
                 val tickets = result.mapNotNull { it.toObject(Booking::class.java) }
                 _userTickets.value = tickets
             }
@@ -85,7 +85,7 @@ class AuthViewModel : ViewModel() {
             }
     }
 
-    // --- ምስልን ወደ ImgBB ለመጫን (ለ Organizer ዝግጅት ሲፈጥር) ---
+
     fun uploadImage(context: Context, imageUri: Uri, onResult: (String?) -> Unit) {
         val apiKey = "60b3c6cbf5294deb0a5aea8b1c90a7d0"
         try {
@@ -166,7 +166,7 @@ class AuthViewModel : ViewModel() {
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     fetchUserProfile()
-                    fetchUserTickets() // መግባት ሲሳካ ቲኬቶችንም አምጣ
+                    fetchUserTickets()
                     onResult(true, null)
                 } else {
                     val errorMsg = task.exception?.localizedMessage ?: "Login failed"
@@ -179,6 +179,6 @@ class AuthViewModel : ViewModel() {
     fun logout() {
         auth.signOut()
         _userData.value = null
-        _userTickets.value = emptyList() // ሲወጣ ቲኬቶችን አጽዳ
+        _userTickets.value = emptyList()
     }
 }

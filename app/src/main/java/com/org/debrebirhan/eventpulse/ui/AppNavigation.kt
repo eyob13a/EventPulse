@@ -37,7 +37,7 @@ fun AppNavigation(
             currentRoute != "manage_users" &&
             currentRoute != "create_event" &&
             currentRoute != "manage_events_crud" &&
-            currentRoute?.startsWith("update_event") == false && // 🚩 ማስተካከያ፡ ኤዲት ገጽ ላይ BottomBar እንዳይኖር
+            currentRoute?.startsWith("update_event") == false &&
             currentRoute != "check_role" &&
             currentRoute?.startsWith("payment") == false
 
@@ -101,7 +101,7 @@ fun AppNavigation(
                     },
                     onEventClick = { eventId -> navController.navigate("detail/$eventId") },
                     onAddEventClick = {
-                        // 🚩 ማስተካከያ፡ ይህ በኦርጋናይዘር ገጽ ላይ ብቻ ስለሚሆን በቀጥታ ወደ create ይሂድ
+
                         navController.navigate("create_event")
                     }
                 )
@@ -225,7 +225,7 @@ fun AppNavigation(
             composable("approvals") { ApprovalsScreen(adminViewModel = adminViewModel, onBack = { navController.popBackStack() }) }
             composable("manage_users") { ManageUsersScreen(adminViewModel = adminViewModel, onBack = { navController.popBackStack() }) }
 
-            // 🚩 ማስተካከያ፦ ባዶ የነበረውን `onEditEvent` ወደ update_event እንዲመራ አድርገነዋል
+
             composable("manage_events_crud") {
                 AllEventsScreen(
                     adminViewModel = adminViewModel,
@@ -237,7 +237,7 @@ fun AppNavigation(
                 )
             }
 
-            // 🚩 አዲስ ማስተካከያ፦ የ Update Event ገጽ ጥሪ (መረጃውን ይዞ እንዲከፈት)
+
             composable("update_event/{eventId}") { backStackEntry ->
                 val eventId = backStackEntry.arguments?.getString("eventId")
                 val event = adminViewModel.allApprovedEvents.collectAsState().value.find { it.id == eventId }

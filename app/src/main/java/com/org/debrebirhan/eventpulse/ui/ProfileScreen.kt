@@ -33,7 +33,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel) {
     val eventPulseOrange = Color(0xFFD35400)
     val softGray = Color(0xFFF8F9FA)
 
-    // collectAsStateWithLifecycle መጠቀም ለትውስታ (Memory) አያያዝ የተሻለ ነው
+    // collectAsStateWithLifecycle
     val userData by authViewModel.userData.collectAsStateWithLifecycle()
     val userEmail = authViewModel.currentUserEmail ?: "No Email"
 
@@ -46,7 +46,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel) {
             CenterAlignedTopAppBar(
                 title = { Text("My Profile", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { /* ወደፊት ለሴቲንግ መጠቀም ትችላለህ */ }) {
+                    IconButton(onClick = {  }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.Gray)
                     }
                 },
@@ -64,7 +64,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel) {
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ፕሮፋይል ምስል ቦታ (በግራዲየንት የታጀበ)
+
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -86,7 +86,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // የተጠቃሚ ስም
+
             Text(
                 text = userData?.get("fullName")?.toString() ?: "Loading...",
                 fontSize = 26.sp,
@@ -95,14 +95,14 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel) {
             )
 
             Text(
-                text = "Event Enthusiast", // ወይም የተጠቃሚው ሮል
+                text = "Event Enthusiast",
                 fontSize = 14.sp,
                 color = Color.Gray
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // መረጃዎች የሚቀመጡበት ካርድ
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -122,7 +122,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel) {
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Logout Button - ይበልጥ ጎልቶ እንዲታይ
+
             Button(
                 onClick = {
                     authViewModel.logout()
@@ -146,7 +146,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel) {
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // ቨርዥን መረጃ
+
             Surface(
                 color = softGray,
                 shape = RoundedCornerShape(12.dp),

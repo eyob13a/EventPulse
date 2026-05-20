@@ -6,7 +6,7 @@ class EventRepository {
 
     private val db = FirebaseFirestore.getInstance()
 
-    // ---------------- GET ALL EVENTS (SAFE VERSION) ----------------
+    // GET ALL EVENTS
     fun getAllEvents(onResult: (List<Event>) -> Unit) {
 
         db.collection("events")
@@ -16,6 +16,7 @@ class EventRepository {
                 val events = snapshot.documents.mapNotNull { doc ->
 
                     try {
+
                         Event(
                             id = doc.id,
                             title = doc.getString("title") ?: "",
@@ -30,7 +31,9 @@ class EventRepository {
                             capacity = doc.getString("capacity") ?: "0",
                             status = doc.getString("status") ?: "pending"
                         )
+
                     } catch (e: Exception) {
+
                         null
                     }
                 }
@@ -38,30 +41,41 @@ class EventRepository {
                 onResult(events)
             }
             .addOnFailureListener {
+
                 onResult(emptyList())
             }
     }
 
-    // ---------------- ADD EVENT ----------------
+    // ADD EVENT
     fun addEvent(event: Event, onComplete: (Boolean) -> Unit) {
 
         val docRef = if (event.id.isNotEmpty()) {
+
             db.collection("events").document(event.id)
+
         } else {
+
             db.collection("events").document()
         }
 
         val finalEvent = event.copy(id = docRef.id)
 
         docRef.set(finalEvent)
-            .addOnSuccessListener { onComplete(true) }
-            .addOnFailureListener { onComplete(false) }
+            .addOnSuccessListener {
+
+                onComplete(true)
+            }
+            .addOnFailureListener {
+
+                onComplete(false)
+            }
     }
 
-    // ---------------- UPDATE EVENT ----------------
+    // UPDATE EVENT
     fun updateEvent(event: Event, onComplete: (Boolean) -> Unit) {
 
         if (event.id.isBlank()) {
+
             onComplete(false)
             return
         }
@@ -69,17 +83,29 @@ class EventRepository {
         db.collection("events")
             .document(event.id)
             .set(event)
-            .addOnSuccessListener { onComplete(true) }
-            .addOnFailureListener { onComplete(false) }
+            .addOnSuccessListener {
+
+                onComplete(true)
+            }
+            .addOnFailureListener {
+
+                onComplete(false)
+            }
     }
 
-    // ---------------- DELETE EVENT ----------------
+    // DELETE EVENT
     fun deleteEvent(eventId: String, onComplete: (Boolean) -> Unit) {
 
         db.collection("events")
             .document(eventId)
             .delete()
-            .addOnSuccessListener { onComplete(true) }
-            .addOnFailureListener { onComplete(false) }
+            .addOnSuccessListener {
+
+                onComplete(true)
+            }
+            .addOnFailureListener {
+
+                onComplete(false)
+            }
     }
 }

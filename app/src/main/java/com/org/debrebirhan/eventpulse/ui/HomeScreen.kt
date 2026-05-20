@@ -58,12 +58,12 @@ fun HomeScreen(
 
     val isLoggedIn = authViewModel.isUserLoggedIn()
 
-    // ራስ-ሰር ዳታ ማምጣት (Auto-Fetch)
+
     LaunchedEffect(Unit) {
         eventViewModel.fetchEvents()
     }
 
-    // ካቴጎሪዎቹ ከ CreateEventScreen ጋር አንድ አይነት እንዲሆኑ ተደርጓል
+
     val categories = listOf(
         EventCategory("Concerts", Icons.Default.MusicNote, Color(0xFFE74C3C)),
         EventCategory("Culture", Icons.Default.Public, Color(0xFFF39C12)),
@@ -106,8 +106,6 @@ fun HomeScreen(
             )
         },
 
-        // 🚩 ደረጃ 3 ማስተካከያ፦ የፕላስ (+) ምልክቱ ከነጭራሹ ከሆም ፔጅ ላይ ጠፍቷል።
-        // መታየት ያለበት በ OrganizerDashboardScreen ላይ ብቻ ስለሆነ እዚህ ጋር የነበረው floatingActionButton ሙሉ በሙሉ ተሰርዟል።
         floatingActionButton = {}
     ) { paddingValues ->
 
@@ -128,8 +126,8 @@ fun HomeScreen(
 
                 item {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        // 🚩 ደረጃ 2 ማስተካከያ፦ ተጠቃሚው በትክክል Login ካደረገ ብቻ ስሙን ያሳያል።
-                        // Login ካላደረገ ደግሞ "Welcome to Event Pulse!" ብሎ ንጹህ ገጽ ያሳያል።
+
+
                         Text(
                             text = if (isLoggedIn && userName.isNotEmpty()) "Welcome, $userName!" else "Welcome to Event Pulse!",
                             fontSize = 24.sp,

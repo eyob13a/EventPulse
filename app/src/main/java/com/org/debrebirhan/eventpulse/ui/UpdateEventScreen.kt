@@ -20,7 +20,7 @@ fun UpdateEventScreen(
     onBack: () -> Unit,
     onSuccess: () -> Unit
 ) {
-    // የቀድሞውን ዳታ በቴክስት ፊልዱ ላይ እንዲያሳይ መነሻ እናደርገዋለን
+
     var title by remember { mutableStateOf(event.title) }
     var location by remember { mutableStateOf(event.location) }
     var date by remember { mutableStateOf(event.date) }
@@ -72,8 +72,8 @@ fun UpdateEventScreen(
 
             Button(
                 onClick = {
-                    // 🚩 እዚህ ጋር የ Firebase Update ሎጂክህን ትጠራለህ
-                    // ለምሳሌ፡ eventViewModel.updateEvent(event.id, title, location, date)
+
+
                     onSuccess()
                 },
                 modifier = Modifier.fillMaxWidth(),

@@ -31,7 +31,7 @@ fun AdminDashboardScreen(
     onCRUDEvents: () -> Unit,
     onLogout: () -> Unit
 ) {
-    // እውነተኛ ዳታዎች ከ ViewModel
+
     val totalEvents by adminViewModel.totalEventsCount.collectAsState()
     val totalUsers by adminViewModel.totalUsersCount.collectAsState()
     val pendingApprovals by adminViewModel.pendingApprovalsCount.collectAsState()
@@ -109,7 +109,7 @@ fun AdminDashboardScreen(
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // 🚩 STATS SECTION - 3 ካርዶች ብቻ ለሞባይል በሚመች መልኩ
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -138,7 +138,7 @@ fun AdminDashboardScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // ለዲዛይን ውበት ያክል ትንሽ ሳጥን
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

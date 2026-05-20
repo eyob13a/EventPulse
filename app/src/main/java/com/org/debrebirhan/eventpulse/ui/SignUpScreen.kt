@@ -19,14 +19,17 @@ import com.org.debrebirhan.eventpulse.viewmodel.AuthViewModel
 
 @Composable
 fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
+
     var fullName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("+251") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    // --- አዳዲስ የሮል መለያዎች ---
-    var selectedRole by remember { mutableStateOf("Attendee") } // Default Attendee ነው
+    // Role Selection
+    var selectedRole by remember { mutableStateOf("Attendee") }
+
+    // Organizer Fields
     var orgName by remember { mutableStateOf("") }
     var orgPhone by remember { mutableStateOf("") }
 
@@ -41,10 +44,11 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
             .fillMaxSize()
             .background(Color.White)
             .padding(24.dp)
-            .verticalScroll(scrollState), // ለሞባይል ስክሪን እንዲመች scrolling ጨምሬበታለሁ
+            .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+
         Text(
             text = "Create Your Account",
             fontSize = 28.sp,
@@ -69,13 +73,15 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Email Field
+        // Phone Number Field
         TextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
+            value = phoneNumber,
+            onValueChange = { phoneNumber = it },
+            label = { Text("Phone Number") },
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Phone
+            ),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color(0xFFFDF2E9),
                 unfocusedContainerColor = Color(0xFFF2F2F2),
@@ -86,35 +92,66 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- Role Selection Section ---
+        // Email Field
+        TextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email
+            ),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFFFDF2E9),
+                unfocusedContainerColor = Color(0xFFF2F2F2),
+                focusedIndicatorColor = eventPulseOrange,
+                focusedLabelColor = eventPulseOrange
+            )
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Role Selection
         Text(
             text = "Register as:",
             modifier = Modifier.align(Alignment.Start),
             fontWeight = FontWeight.Medium,
             color = Color.Gray
         )
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             RadioButton(
                 selected = selectedRole == "Attendee",
                 onClick = { selectedRole = "Attendee" },
-                colors = RadioButtonDefaults.colors(selectedColor = eventPulseOrange)
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = eventPulseOrange
+                )
             )
+
             Text("Attendee")
+
             Spacer(modifier = Modifier.width(16.dp))
+
             RadioButton(
                 selected = selectedRole == "Organizer",
                 onClick = { selectedRole = "Organizer" },
-                colors = RadioButtonDefaults.colors(selectedColor = eventPulseOrange)
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = eventPulseOrange
+                )
             )
+
             Text("Organizer")
         }
 
-        // --- ለአዘጋጅ (Organizer) ብቻ የሚታይ ተጨማሪ ፎርም ---
+        // Organizer Fields
         if (selectedRole == "Organizer") {
+
             Spacer(modifier = Modifier.height(12.dp))
+
             TextField(
                 value = orgName,
                 onValueChange = { orgName = it },
@@ -126,13 +163,17 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
                     focusedIndicatorColor = eventPulseOrange
                 )
             )
+
             Spacer(modifier = Modifier.height(12.dp))
+
             TextField(
                 value = orgPhone,
                 onValueChange = { orgPhone = it },
                 label = { Text("Organization Phone") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Phone
+                ),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color(0xFFFDF2E9),
                     unfocusedContainerColor = Color(0xFFF2F2F2),
@@ -173,6 +214,7 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
             )
         )
 
+        // Error Message
         if (errorMessage.isNotEmpty()) {
             Text(
                 text = errorMessage,
@@ -185,41 +227,97 @@ fun SignUpScreen(viewModel: AuthViewModel, onNavigateBack: () -> Unit) {
         Spacer(modifier = Modifier.height(32.dp))
 
         if (isLoading) {
-            CircularProgressIndicator(color = eventPulseOrange)
+
+            CircularProgressIndicator(
+                color = eventPulseOrange
+            )
+
         } else {
+
             Button(
                 onClick = {
-                    if (password != confirmPassword) {
-                        errorMessage = "Passwords do not match!"
-                    } else if (fullName.isEmpty() || email.isEmpty()) {
-                        errorMessage = "Please fill all required fields"
-                    } else if (selectedRole == "Organizer" && (orgName.isEmpty() || orgPhone.isEmpty())) {
-                        errorMessage = "Please fill Organization details"
-                    } else {
-                        isLoading = true
-                        // አዲሱን ሎጂክ ወደ ViewModel መላክ (የሚቀጥለው ፋይላችን ይሆናል)
-                        viewModel.signUp(
-                            fullName,
-                            phoneNumber,
-                            email,
-                            password,
-                            selectedRole,
-                            orgName,
-                            orgPhone
-                        ) { success, error ->
-                            isLoading = false
-                            if (success) onNavigateBack() else errorMessage = error ?: "Registration Failed"
+
+                    when {
+
+                        fullName.isEmpty() ||
+                                email.isEmpty() ||
+                                password.isEmpty() ||
+                                confirmPassword.isEmpty() -> {
+
+                            errorMessage = "Please fill all required fields"
+                        }
+
+                        password.length < 6 -> {
+
+                            errorMessage =
+                                "Password must be at least 6 characters"
+                        }
+
+                        password != confirmPassword -> {
+
+                            errorMessage =
+                                "Passwords do not match!"
+                        }
+
+                        selectedRole == "Organizer" &&
+                                (orgName.isEmpty() || orgPhone.isEmpty()) -> {
+
+                            errorMessage =
+                                "Please fill Organization details"
+                        }
+
+                        else -> {
+
+                            errorMessage = ""
+                            isLoading = true
+
+                            viewModel.signUp(
+                                fullName,
+                                phoneNumber,
+                                email,
+                                password,
+                                selectedRole,
+                                orgName,
+                                orgPhone
+                            ) { success, error ->
+
+                                isLoading = false
+
+                                if (success) {
+                                    onNavigateBack()
+                                } else {
+                                    errorMessage =
+                                        error ?: "Registration Failed"
+                                }
+                            }
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = eventPulseOrange)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = eventPulseOrange
+                )
             ) {
-                Text("Register", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White)
+
+                Text(
+                    text = "Register",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White
+                )
             }
 
-            TextButton(onClick = onNavigateBack, modifier = Modifier.padding(top = 8.dp)) {
-                Text("Already have an account? Login", color = eventPulseOrange)
+            TextButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+
+                Text(
+                    "Already have an account? Login",
+                    color = eventPulseOrange
+                )
             }
         }
     }

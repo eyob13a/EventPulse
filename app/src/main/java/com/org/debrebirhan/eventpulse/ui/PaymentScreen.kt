@@ -40,7 +40,7 @@ fun PaymentScreen(
 
     val db = FirebaseFirestore.getInstance()
 
-    // የማስታወሻ (Reminder) ሎጂክ
+
     fun scheduleReminder(eventName: String, eventDateString: String) {
         try {
             val sdf = SimpleDateFormat("MMM dd, yyyy 'at' HH:mm", Locale.getDefault())
@@ -48,10 +48,10 @@ fun PaymentScreen(
 
             if (date != null) {
                 val currentTime = System.currentTimeMillis()
-                // ከዝግጅቱ 5 ደቂቃ በፊት እንዲያስታውስ (300,000 milliseconds)
+
                 val delay = (date.time - 300000) - currentTime
 
-                val finalDelay = if (delay > 0) delay else 5000L // ቀኑ ካለፈ ከ5 ሰከንድ በኋላ
+                val finalDelay = if (delay > 0) delay else 5000L
 
                 val reminderRequest = OneTimeWorkRequestBuilder<ReminderWorker>()
                     .setInitialDelay(finalDelay, TimeUnit.MILLISECONDS)
@@ -65,7 +65,7 @@ fun PaymentScreen(
         }
     }
 
-    // የክፍያ ስኬት መልእክት ሳጥን (Success Dialog)
+
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { },
@@ -98,7 +98,7 @@ fun PaymentScreen(
                                     .set(bookingData)
                                     .addOnSuccessListener {
                                         scheduleReminder(eventName, eventDate)
-                                        viewModel.fetchUserTickets() // የቲኬት ሊስቱን እንዲያድስ
+                                        viewModel.fetchUserTickets()
                                         showSuccessDialog = false
                                         isSaving = false
                                         onPaymentSuccess()
@@ -148,7 +148,7 @@ fun PaymentScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // የኢቨንት መረጃ ማሳያ ካርድ
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(4.dp),
@@ -181,7 +181,7 @@ fun PaymentScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // የክፍያ አማራጮች ዝርዝር
+
             val methods = listOf("Telebirr", "Chapa (CBE/Abyssinia)", "BOA MPesa")
             methods.forEach { method ->
                 Surface(
@@ -212,7 +212,7 @@ fun PaymentScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // የመክፈያ በተን
+
             Button(
                 onClick = { showSuccessDialog = true },
                 modifier = Modifier

@@ -139,11 +139,11 @@ fun EventDetailScreen(
                 Button(
                     onClick = {
                         if (authViewModel.isUserLoggedIn()) {
-                            // ተጠቃሚው ገብቶ ከሆነ መረጃውን ይዞ ወደ ክፍያ ገጽ ይሄዳል
-                            // ስፔስ (Space) ያለባቸውን ስሞች በሰላም ለማስተላለፍ Title መላክ ይቻላል
+
+
                             navController.navigate("payment/${event.title}/${event.price}/${event.date}")
                         } else {
-                            // ተጠቃሚው ካልገባ መጀመሪያ እንዲገባ ወደ login ይላካል
+
                             navController.navigate("login")
                         }
                     },

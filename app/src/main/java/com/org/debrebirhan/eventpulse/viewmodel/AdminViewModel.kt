@@ -35,7 +35,7 @@ class AdminViewModel : ViewModel() {
 
     // ---------------- FETCH STATS (Real-time Database Count) ----------------
     fun fetchStats() {
-        // 1. የጸደቁ ኢቨንቶች ብዛት (Total Approved Events)
+
         db.collection("events")
             .whereEqualTo("status", "approved")
             .addSnapshotListener { snapshot, error ->
@@ -44,7 +44,7 @@ class AdminViewModel : ViewModel() {
                 }
             }
 
-        // 2. በመጠባበቅ ላይ ያሉ ጥያቄዎች (Pending Approvals)
+
         db.collection("events")
             .whereEqualTo("status", "pending")
             .addSnapshotListener { snapshot, error ->
@@ -53,7 +53,7 @@ class AdminViewModel : ViewModel() {
                 }
             }
 
-        // 3. ጠቅላላ የተጠቃሚዎች ብዛት (Total Users from Database)
+
         db.collection("users")
             .addSnapshotListener { snapshot, error ->
                 if (error == null) {
@@ -98,7 +98,7 @@ class AdminViewModel : ViewModel() {
         db.collection("events").document(eventId)
             .update("status", newStatus)
             .addOnSuccessListener {
-                // ቁጥሮቹ በ SnapshotListener አማካኝነት በራሳቸው ይዘመናሉ
+
                 fetchPendingEvents()
                 onSuccess()
             }
@@ -131,7 +131,7 @@ class AdminViewModel : ViewModel() {
         db.collection("events").document(eventId)
             .delete()
             .addOnSuccessListener {
-                // ዝርዝሮቹን ማደስ
+
                 fetchPendingEvents()
                 fetchAllApprovedEvents()
                 onSuccess()

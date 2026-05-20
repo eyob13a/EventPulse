@@ -26,12 +26,12 @@ fun ManageUsersScreen(
     val users by adminViewModel.users.collectAsState()
     var userToDelete by remember { mutableStateOf<Pair<String, String>?>(null) } // UID and Name
 
-    // ስክሪኑ ሲከፈት ዳታውን ይጭናል
+
     LaunchedEffect(Unit) {
         adminViewModel.fetchAllUsers()
     }
 
-    // የማጥፊያ ማረጋገጫ (Delete Confirmation Dialog)
+
     if (userToDelete != null) {
         AlertDialog(
             onDismissRequest = { userToDelete = null },

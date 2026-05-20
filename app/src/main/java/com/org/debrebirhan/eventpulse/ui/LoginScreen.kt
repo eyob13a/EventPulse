@@ -25,12 +25,12 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
-    // 🚩 ስህተቱ መኖሩንና አለመኖሩን የምንከታተልበት
+
     var errorMessage by remember { mutableStateOf("") }
 
     val eventPulseOrange = Color(0xFFD35400)
 
-    // አዲስ ሙከራ ሲጀመር የድሮ ስህተቶችን ለማጽዳት
+
     LaunchedEffect(email, password) {
         if (errorMessage.isNotEmpty()) {
             errorMessage = ""
@@ -76,7 +76,7 @@ fun LoginScreen(
             singleLine = true
         )
 
-        // 🚩 ስህተት ካለ እዚህ ጋር ይታያል
+
         if (errorMessage.isNotEmpty()) {
             Text(
                 text = errorMessage,
@@ -98,14 +98,14 @@ fun LoginScreen(
                         errorMessage = "Please enter both email and password"
                     } else {
                         isLoading = true
-                        errorMessage = "" // ሙከራ ሲጀመር ስህተቱን አጽዳ
+                        errorMessage = ""
 
                         viewModel.signIn(email, password) { success, error ->
                             isLoading = false
                             if (success) {
                                 onLoginSuccess()
                             } else {
-                                // 🚩 Firebase የሚልከውን ስህተት እዚህ ጋር እናሳያለን
+
                                 errorMessage = error ?: "Incorrect email or password. Please try again."
                             }
                         }
